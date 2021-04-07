@@ -83,15 +83,13 @@ param_aggregations(t::Type, d) = Aggregation(
 all_aggregations(t::Type, d) = Aggregation((nonparam_aggregations(t, d), param_aggregations(t, d)))
 
 @testset "Doctests" begin
-    #DocMeta.setdocmeta!(Mill, :DocTestSetup, quote
-    #    using Mill, Flux, Random, SparseArrays, Setfield, HierarchicalUtils
-    #end; recursive=true)
-    #doctest(Mill)
+    DocMeta.setdocmeta!(Mill, :DocTestSetup, quote
+        using Mill, Flux, Random, SparseArrays, Setfield, HierarchicalUtils
+    end; recursive=true)
+    doctest(Mill)
 end
 
-test_f = "modelnode.jl"
-@time include(test_f)
-#for test_f in readdir(".")
-#    (endswith(test_f, ".jl") && test_f != "runtests.jl") || continue
-#    include(test_f)
-#end
+for test_f in readdir(".")
+    (endswith(test_f, ".jl") && test_f != "runtests.jl") || continue
+    include(test_f)
+end
