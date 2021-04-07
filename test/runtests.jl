@@ -73,7 +73,7 @@ nonparam_aggregations(t::Type,d ) = Aggregation(
         SegmentedSum(randn(rng, t, d)),
         SegmentedMean(randn(rng, t, d)),
         SegmentedMax(randn(rng, t, d)),
-        meanmax_aggregation(rng, t, d))
+        meanmax_aggregation(t, d))
 
 param_aggregations(t::Type, d) = Aggregation(
         SegmentedPNorm(randn(rng, t, d), randn(rng, t, d), randn(rng, t, d)),
