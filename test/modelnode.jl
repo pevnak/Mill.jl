@@ -251,7 +251,7 @@ end
 
 @time @testset "model aggregation grad check w.r.t. inputs" begin
     for (bags1, bags2, bags3) in BAGS3
-        activ_f = rand(ACTIVATIONS)
+        activ_f = rand(rng, ACTIVATIONS)
         @info "using" activ_f
         @time layerbuilder(k) = Dense(k, 2, activ_f) |> f64
         @time abuilder(d) = all_aggregations(Float64, d)
@@ -288,7 +288,7 @@ end
 
 @time @testset "model aggregation grad check w.r.t. inputs weighted" begin
     for (bags1, bags2, bags3) in BAGS3
-        layerbuilder(k) = Dense(k, 2, rand(ACTIVATIONS)) |> f64
+        layerbuilder(k) = Dense(k, 2, rand(rng, ACTIVATIONS)) |> f64
         abuilder(d) = all_aggregations(Float64, d)
         x = randn(rng, 4, 4)
         y = randn(rng, 3, 4)
@@ -314,7 +314,7 @@ end
 
 @time @testset "model aggregation grad check w.r.t. params" begin
     for (bags1, bags2, bags3) in BAGS3
-        layerbuilder(k) = Dense(k, 2, rand(ACTIVATIONS)) |> f64
+        layerbuilder(k) = Dense(k, 2, rand(rng, ACTIVATIONS)) |> f64
         abuilder(d) = all_aggregations(Float64, d)
         x = randn(rng, 4, 4)
         y = randn(rng, 3, 4)
@@ -362,8 +362,8 @@ end
                      b = ArrayNode(randn(rng, 3, 4))
                     ))
     m = ProductModel((
-                      a = ArrayModel(Dense(2, 2, rand(ACTIVATIONS))),
-                      b = ArrayModel(Dense(3, 1, rand(ACTIVATIONS)))
-                     ), Dense(3, 2, rand(ACTIVATIONS))) |> f64
+                      a = ArrayModel(Dense(2, 2, rand(rng, ACTIVATIONS))),
+                      b = ArrayModel(Dense(3, 1, rand(rng, ACTIVATIONS)))
+                     ), Dense(3, 2, rand(rng, ACTIVATIONS))) |> f64
     @test gradtest(() -> m(ds).data, Flux.params(m))
 end
