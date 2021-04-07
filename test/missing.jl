@@ -1,5 +1,5 @@
 @testset "testing catobs & getindex operations missing values" begin
-    a = BagNode(ArrayNode(rand(3,4)), [1:4], nothing)
+    a = BagNode(ArrayNode(rand(rng, 3,4)), [1:4], nothing)
     e = BagNode(missing, AlignedBags([0:-1]), nothing)
 
     x = reduce(catobs, [a, e])
@@ -41,7 +41,7 @@
 end
 
 @testset "testing catobs & getindex operations missing values for weighted" begin
-    a = WeightedBagNode(ArrayNode(rand(3,4)), [1:4], [1.0, 0.0, 1.0, 0.5], nothing)
+    a = WeightedBagNode(ArrayNode(rand(rng, 3,4)), [1:4], [1.0, 0.0, 1.0, 0.5], nothing)
     e = WeightedBagNode(missing, AlignedBags([0:-1]), [], nothing)
 
     x = reduce(catobs, [a, e])
@@ -73,7 +73,7 @@ end
 end
 
 @testset "testing model operations missing values" begin
-    a = BagNode(ArrayNode(rand(3,4)), [1:4], nothing)
+    a = BagNode(ArrayNode(rand(rng, 3,4)), [1:4], nothing)
     e = BagNode(missing, AlignedBags([0:-1]), nothing)
     m = BagModel(ArrayModel(Dense(3, 2)), mean_aggregation(2), ArrayModel(Dense(3, 2)))
 
@@ -103,14 +103,14 @@ end
 end
 
 @testset "testing reduction with missing values" begin
-    a = ProductNode((x=ArrayNode(rand(3,4)), y=ArrayNode(rand(3,4))))
-    b = ProductNode((x=ArrayNode(rand(3,4)), y=ArrayNode(rand(3,4))))
+    a = ProductNode((x=ArrayNode(rand(rng, 3,4)), y=ArrayNode(rand(rng, 3,4))))
+    b = ProductNode((x=ArrayNode(rand(rng, 3,4)), y=ArrayNode(rand(rng, 3,4))))
 
     c = ProductNode((
-        x=BagNode(missing, AlignedBags([0:-1]), nothing), y=ArrayNode(rand(3,1)),
+        x=BagNode(missing, AlignedBags([0:-1]), nothing), y=ArrayNode(rand(rng, 3,1)),
     ))
     d = ProductNode((
-        x=BagNode(a, [1:4], nothing), y=ArrayNode(rand(3,1)),
+        x=BagNode(a, [1:4], nothing), y=ArrayNode(rand(rng, 3,1)),
     ))
 
     ba = BagNode(a, [1:4], nothing)

@@ -1,6 +1,6 @@
 @testset "cat" begin
-    Ws = [randn(3,rand(1:10)) for _ in 1:4]
-    ψs = [randn(size(Ws[i], 2)) for i in 1:4]
+    Ws = [randn(rng, 3,rand(rng, 1:10)) for _ in 1:4]
+    ψs = [randn(rng, size(Ws[i], 2)) for i in 1:4]
     As = PreImputingMatrix.(Ws, ψs)
     for is in powerset(1:4), is in permutations(is)
         length(is) > 0 || continue
@@ -9,8 +9,8 @@
         @test_throws ArgumentError vcat(As[is]...)
     end
 
-    Ws = [randn(rand(1:10), 3) for _ in 1:4]
-    ψs = [randn(size(Ws[i], 1)) for i in 1:4]
+    Ws = [randn(rng, rand(rng, 1:10), 3) for _ in 1:4]
+    ψs = [randn(rng, size(Ws[i], 1)) for i in 1:4]
     As = PostImputingMatrix.(Ws, ψs)
     for is in powerset(1:4), is in permutations(is)
         length(is) > 0 || continue
@@ -30,19 +30,19 @@ end
 
     function _test_imput(W, ob::Vector, t=10, p=0.2)
         for _ in 1:t
-            b = [rand() < 0.2 ? missing : x for x in ob]
-            idcs = rand([true, false], length(ob))
+            b = [rand(rng) < 0.2 ? missing : x for x in ob]
+            idcs = rand(rng, [true, false], length(ob))
             _test_imput(W, ob, b)
         end
     end
-    _test_imput(randn(3,3), randn(3))
-    _test_imput(reshape(1:9 |> collect, (3,3)), rand(1:3, 3))
-    _test_imput(randn(3,3), randn(3), fill(missing, 3))
-    _test_imput(reshape(1:9 |> collect, (3,3)), rand(1:3, 3), fill(missing, 3))
+    _test_imput(randn(rng, 3,3), randn(rng, 3))
+    _test_imput(reshape(1:9 |> collect, (3,3)), rand(rng, 1:3, 3))
+    _test_imput(randn(rng, 3,3), randn(rng, 3), fill(missing, 3))
+    _test_imput(reshape(1:9 |> collect, (3,3)), rand(rng, 1:3, 3), fill(missing, 3))
 end
 
 @testset "Wrong dimensions" begin
-    A = PreImputingMatrix(rand(2,3), rand(3))
+    A = PreImputingMatrix(rand(rng, 2,3), rand(rng, 3))
     @test_throws DimensionMismatch A * []
     @test_throws DimensionMismatch A * [[]]
     @test_throws DimensionMismatch A * [1, 2]
@@ -50,7 +50,7 @@ end
     @test_throws DimensionMismatch A * [1, 2, 3, 4]
     @test_throws DimensionMismatch A * [1, 2, 3, missing]
 
-    A = PostImputingMatrix(rand(2,3), rand(2))
+    A = PostImputingMatrix(rand(rng, 2,3), rand(rng, 2))
     @test_throws DimensionMismatch A * MaybeHotVector(2, 2)
     @test_throws DimensionMismatch A * MaybeHotVector(missing, 4)
     @test_throws DimensionMismatch A * MaybeHotMatrix(Int[], 1)
@@ -103,12 +103,12 @@ end
     @test eltype(A * B) === Union{Int64, Missing}
     @test eltype(A * b) === Union{Int64, Missing}
 
-    W = randn(2,3)
-    ψ = randn(2)
+    W = randn(rng, 2,3)
+    ψ = randn(rng, 2)
     A = PostImputingMatrix(W, ψ)
 
-    B = randn(3, 5)
-    b = randn(3)
+    B = randn(rng, 3, 5)
+    b = randn(rng, 3)
     @test A * B ≈ W * B
     @test A * b ≈ W * b
     @inferred A * B
@@ -140,7 +140,7 @@ end
         W = randn(m, n)
         ψ = randn(m)
         A = PostImputingMatrix(W, ψ)
-        i = rand(1:n)
+        i = rand(rng, 1:n)
         b = MaybeHotVector(i, n)
         @test A * b == W * onehot(b)
         @inferred A * b
@@ -157,9 +157,9 @@ end
         W = randn(m, n)
         ψ = randn(m)
         A = PostImputingMatrix(W, ψ)
-        i1 = rand(1:n, k)
+        i1 = rand(rng, 1:n, k)
         i2 = fill(missing, k)
-        i3 = [isodd(i) ? missing : rand(1:n) for i in 1:k]
+        i3 = [isodd(i) ? missing : rand(rng, 1:n) for i in 1:k]
         B1 = MaybeHotMatrix(i1, n)
         B2 = MaybeHotMatrix(i2, n)
         B3 = MaybeHotMatrix(i3, n)
@@ -183,7 +183,7 @@ end
         ψ = randn(m)
         A = PostImputingMatrix(W, ψ)
 
-        S = [randstring(rand(1:100)) for _ in 1:k] |> PooledArray
+        S = [randstring(rand(rng, 1:100)) for _ in 1:k] |> PooledArray
         B = NGramMatrix(S, 3, 256, n)
         @test A * B ≈ W * Matrix(SparseMatrixCSC(B))
         @inferred A * B
@@ -196,7 +196,7 @@ end
         @test eltype(A * B) === eltype(ψ)
 
         if k > 1
-            S = [isodd(i) ? missing : randstring(rand(1:10)) for i in 1:k]
+            S = [isodd(i) ? missing : randstring(rand(rng, 1:10)) for i in 1:k]
             B = NGramMatrix(S, 3, 256, n)
             C = A * B
             @test all(isequal(ψ), eachcol(C[:, ismissing.(S)]))
@@ -262,7 +262,7 @@ end
 end
 
 @testset "post imputing matrix * full maybe hot vector gradient testing" begin
-    for (m, n) in product(fill((2, 5, 10), 2)...), i in [rand(1:n) for _ in 1:3]
+    for (m, n) in product(fill((2, 5, 10), 2)...), i in [rand(rng, 1:n) for _ in 1:3]
         W = randn(m, n)
         ψ = randn(m)
         A = PostImputingMatrix(W, ψ)
@@ -278,7 +278,7 @@ end
 end
 
 @testset "post imputing matrix * full maybe hot matrix gradient testing" begin
-    for (m, n, k) in product(fill((2, 5, 10), 3)...), I in [rand(1:n, k) for _ in 1:3]
+    for (m, n, k) in product(fill((2, 5, 10), 3)...), I in [rand(rng, 1:n, k) for _ in 1:3]
         W = randn(m, n)
         ψ = randn(m)
         A = PostImputingMatrix(W, ψ)
@@ -298,7 +298,7 @@ end
         W = randn(m, n)
         ψ = randn(m)
         A = PostImputingMatrix(W, ψ)
-        S = [randstring(rand(1:100)) for _ in 1:k] |> PooledArray
+        S = [randstring(rand(rng, 1:100)) for _ in 1:k] |> PooledArray
         B = NGramMatrix(S, 3, 256, n)
 
         @test gradtest((W, ψ) -> PostImputingMatrix(W, ψ) * B, W, ψ)
@@ -364,7 +364,7 @@ end
         W = randn(m, n)
         ψ = randn(m)
         A = PostImputingMatrix(W, ψ)
-        I = [isodd(i) ? missing : rand(1:n) for i in 1:k]
+        I = [isodd(i) ? missing : rand(rng, 1:n) for i in 1:k]
         B = MaybeHotMatrix(I, n)
 
         @test gradtest((W, ψ) -> PostImputingMatrix(W, ψ) * B, W, ψ)
@@ -384,7 +384,7 @@ end
         W = randn(m, n)
         ψ = randn(m)
         A = PostImputingMatrix(W, ψ)
-        S = [isodd(i) ? missing : randstring(rand(1:100)) for i in 1:k] |> PooledArray
+        S = [isodd(i) ? missing : randstring(rand(rng, 1:100)) for i in 1:k] |> PooledArray
         B = NGramMatrix(S, 3, 256, n)
 
         @test gradtest((W, ψ) -> PostImputingMatrix(W, ψ) * B, W, ψ)
@@ -436,7 +436,7 @@ end
         W = randn(m, n)
         ψ = randn(n)
         b = Vector{Union{Float64, Missing}}(randn(n))
-        b[rand(eachindex(b), rand(1:n))] .= missing
+        b[rand(eachindex(b), rand(rng, 1:n))] .= missing
 
         @test gradtest((W, ψ) -> PreImputingMatrix(W, ψ) * b, W, ψ)
     end
@@ -447,7 +447,7 @@ end
         W = randn(m, n)
         ψ = randn(n)
         B = Matrix{Union{Float64, Missing}}(randn(n, k))
-        B[rand(eachindex(B), rand(1:n*k))] .= missing
+        B[rand(eachindex(B), rand(rng, 1:n*k))] .= missing
 
         @test gradtest((W, ψ) -> PreImputingMatrix(W, ψ) * B, W, ψ)
     end
@@ -476,23 +476,23 @@ end
         # https://github.com/FluxML/Flux.jl/issues/1479
         # check(d, randn(n), true, false)
         # x = Vector{Union{Float64, Missing}}(randn(n))
-        # x[rand(eachindex(x), rand(1:n))] .= missing
+        # x[rand(eachindex(x), rand(rng, 1:n))] .= missing
         # check(d, x, true, true)
         # check(d, fill(missing, n), false, true)
 
         check(d, randn(n, k), true, false)
         X = Matrix{Union{Float64, Missing}}(randn(n, k))
-        X[rand(eachindex(X), rand(1:n*k))] .= missing
+        X[rand(eachindex(X), rand(rng, 1:n*k))] .= missing
         check(d, X, true, true)
         check(d, fill(missing, n, k), false, true)
 
         d = postimputing_dense(n, m)
 
-        S = [randstring(rand(1:100)) for _ in 1:k]
+        S = [randstring(rand(rng, 1:100)) for _ in 1:k]
         X = NGramMatrix(S, 3, 256, n)
         check(d, X, true, false)
         if k > 1
-            S = [isodd(i) ? missing : randstring(rand(1:10)) for i in 1:k] |> PooledArray
+            S = [isodd(i) ? missing : randstring(rand(rng, 1:10)) for i in 1:k] |> PooledArray
             X = NGramMatrix(S, 3, 256, n)
             check(d, X, true, true)
         end
@@ -501,16 +501,16 @@ end
         check(d, X, false, true)
 
         # https://github.com/FluxML/Flux.jl/issues/1479
-        # x = maybehot(rand(1:n), 1:n)
+        # x = maybehot(rand(rng, 1:n), 1:n)
         # check(d, x, true, false)
         # x = maybehot(missing, 1:n)
         # check(d, x, false, true)
 
-        S = [rand(1:n) for _ in 1:k]
+        S = [rand(rng, 1:n) for _ in 1:k]
         X = maybehotbatch(S, 1:n)
         check(d, X, true, false)
         if k > 1
-            S = [isodd(i) ? missing : rand(1:n) for i in 1:k]
+            S = [isodd(i) ? missing : rand(rng, 1:n) for i in 1:k]
             X = maybehotbatch(S, 1:n)
             check(d, X, true, true)
         end
@@ -535,8 +535,8 @@ end
         @test A == T(2 .* W, 2 .* ψ)
     end
 
-    W = randn(3, 3)
-    ψ = randn(3)
+    W = randn(rng, 3, 3)
+    ψ = randn(rng, 3)
     A1 = PreImputingMatrix(W, ψ)
     check(A1, copy(W), copy(ψ))
     A2 = PostImputingMatrix(W, ψ)

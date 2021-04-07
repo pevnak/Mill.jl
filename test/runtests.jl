@@ -20,13 +20,14 @@ using SparseArrays
 using PooledArrays
 using DataFrames
 using HierarchicalUtils
+using StableRNGs
 
 using BenchmarkTools: @btime
 
 areequal(x) = true
 areequal(x, y, zs...) = isequal(x, y) && areequal(y, zs...)
 
-Random.seed!(25)
+rng = StableRNG(25)
 
 const BAGS = [
       length2bags([1, 2, 3]),
@@ -69,14 +70,14 @@ function Mill.unpack2mill(ds::LazyNode{:Sentence})
 end
 
 nonparam_aggregations(t::Type,d ) = Aggregation(
-        SegmentedSum(randn(t, d)),
-        SegmentedMean(randn(t, d)),
-        SegmentedMax(randn(t, d)),
+        SegmentedSum(randn(rng, t, d)),
+        SegmentedMean(randn(rng, t, d)),
+        SegmentedMax(randn(rng, t, d)),
         meanmax_aggregation(t, d))
 
 param_aggregations(t::Type, d) = Aggregation(
-        SegmentedPNorm(randn(t, d), randn(t, d), randn(t, d)),
-        SegmentedLSE(randn(t, d), randn(t, d)),
+        SegmentedPNorm(randn(rng, t, d), randn(rng, t, d), randn(rng, t, d)),
+        SegmentedLSE(randn(rng, t, d), randn(rng, t, d)),
         summeanmaxpnormlse_aggregation(t, d))
 
 all_aggregations(t::Type, d) = Aggregation((nonparam_aggregations(t, d), param_aggregations(t, d)))

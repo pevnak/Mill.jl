@@ -1,10 +1,10 @@
 metadata = fill("metadata", 4)
-an1 = ArrayNode(rand(Float32, 3, 4))
+an1 = ArrayNode(rand(rng, Float32, 3, 4))
 b = BagNode(an1, [1:4, 0:-1], metadata)
 an2 = ArrayNode(NGramMatrix(["test", "skunk", "mill", "julia"], 3, 10, 17))
 wb = WeightedBagNode(an2, [1:2,3:4], Float32[1,2,3,4], metadata)
 n1 = ProductNode((b=b,wb=wb))
-an3 = ArrayNode(SparseMatrixCSC(rand(Float32, 10, 2)))
+an3 = ArrayNode(SparseMatrixCSC(rand(rng, Float32, 10, 2)))
 n2 = ProductNode((n1, an3))
 
 n2m = reflectinmodel(n2)
@@ -42,7 +42,7 @@ NodeType(n::AbstractString) = LeafNode()
 children(n::Vector{<:AbstractString}) = (n...,)
 
 t2 = treemap(n2, n2m) do (k1, k2), chs
-    NumberNode(rand(1:10), collect(chs))
+    NumberNode(rand(rng, 1:10), collect(chs))
 end
 
 function buf_printtree(data; kwargs...)

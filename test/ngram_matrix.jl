@@ -1,5 +1,5 @@
 @testset "NGramIterator and friends" begin
-    for s in [randstring(100) for _ in 1:10]
+    for s in [randstring(rng, 100) for _ in 1:10]
         it = NGramIterator(s)
         @test length(it) == 100 + 3 - 1
         c = collect(it)
@@ -184,7 +184,7 @@ end
 @testset "NGramMatrix multiplication" begin
     for (n, m) in product([2,3,5], [10, 100, 1000])
         b = 256
-        A = randn(10, m)
+        A = randn(rng, 10, m)
 
         s = [randstring(100) for _ in 1:10]
         si = map(codeunits, s)
@@ -214,7 +214,7 @@ end
 @testset "NGramMatrix multiplication gradtest" begin
     for (n, m) in product([2,3,5], [10, 20])
         b = 256
-        A = randn(10, m)
+        A = randn(rng, 10, m)
 
         s = [randstring(100) for _ in 1:10] |> PooledArray
         si = map(codeunits, s)
@@ -257,7 +257,7 @@ end
     for (n, m) in product([2, 3], [10, 20])
         s = [randstring(10) for _ in 1:10]
         B = NGramMatrix(s, n, 256, m)
-        A = randn(10, m)
+        A = randn(rng, 10, m)
         f = gradf(A -> sin.(A * B), A)
         df = gradf(A -> gradient(f, A)[1], A)
         @test gradtest(df, A)
@@ -271,7 +271,7 @@ end
         @test reduce(catobs, [a, a]).s == vcat(s,s)
         @test hcat(a,a).s == vcat(s,s)
 
-        W = randn(40, 2057)
+        W = randn(rng, 40, 2057)
         @test gradtest(W -> W * a, W)
 
         a = ArrayNode(a, nothing)
@@ -302,7 +302,7 @@ end
 begin
     println("Benchmarking multiplication")
     # begin block body
-    A = randn(80,2053);
+    A = randn(rng, 80,2053);
     s = [randstring(10) for i in 1:1000];
     B = NGramMatrix(s, 3, 256, 2053)
     C = sparse(countngrams(s, 3, 256, size(A, 2)));

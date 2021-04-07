@@ -124,7 +124,7 @@ end
 end
 
 @testset "multiplication" begin
-    W = rand(10, 10)
+    W = rand(rng, 10, 10)
     x1 = MaybeHotVector(1, 10)
     x2 = MaybeHotVector(8, 10)
     x3 = MaybeHotVector(missing, 10)
@@ -194,8 +194,8 @@ end
 
 @testset "AbstractMatrix * MaybeHotVector{<:Integer} gradtest" begin
     # for MaybeHot types with missing elements, it doesn't make sense to compute gradient
-    for (m, n) in product(fill((1, 5, 10, 20), 2)...), i in [rand(1:n) for _ in 1:3]
-        A = randn(m, n)
+    for (m, n) in product(fill((1, 5, 10, 20), 2)...), i in [rand(rng, 1:n) for _ in 1:3]
+        A = randn(rng, m, n)
         b = MaybeHotVector(i, n)
 
         @test gradtest(A -> A * b, A)
@@ -208,7 +208,7 @@ end
 
 @testset "AbstractMatrix * MaybeHotMatrix{<:Integer} gradtest" begin
     # for MaybeHot types with missing elements, it doesn't make sense to compute gradient
-    for (m, n, k) in product(fill((1, 5, 10, 20), 3)...), I in [rand(1:n, k) for _ in 1:3]
+    for (m, n, k) in product(fill((1, 5, 10, 20), 3)...), I in [rand(rng, 1:n, k) for _ in 1:3]
         A = randn(m, n)
         B = MaybeHotMatrix(I, n)
 

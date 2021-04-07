@@ -7,9 +7,9 @@
 end
 
 @testset "testing matvec and vecvec products " begin
-    W = randn(3, 4)
+    W = randn(rng, 3, 4)
     Wt = Matrix(transpose(W))
-    xs = sprand(4, 10, 0.5)
+    xs = sprand(rng, 4, 10, 0.5)
     x = Matrix(xs)
 
     o = zeros(3, 10)
@@ -34,8 +34,8 @@ end
     foreach(i -> Mill._addmattvec!(o, 1, Wt, x, i), 1:10)
     @test o ≈ sum(W*x, dims = 2)
 
-    xs = sprand(10, 1, 0.5)
-    r, s = randn(10,1), Matrix(xs)
+    xs = sprand(rng, 10, 1, 0.5)
+    r, s = randn(rng, 10,1), Matrix(xs)
     o = zeros(10, 10)
     Mill._addvecvect!(o, r, 1, s, 1)
     @test o ≈ r * transpose(s)
@@ -60,9 +60,9 @@ end
 end
 
 @testset "testing the convolution" begin
-    xs = sprand(3, 15, 0.5)
+    xs = sprand(rng, 3, 15, 0.5)
     x = Matrix(xs)
-    filters = randn(4, 3, 3)
+    filters = randn(rng, 4, 3, 3)
     fs = [filters[:,:,i] for i in 1:3]
     for bags in [AlignedBags([1:1, 2:3, 4:6, 7:15]), ScatteredBags(collect.([1:1, 2:3, 4:6, 7:15]))]
         @test bagconv(x, bags, fs...) ≈ legacy_bagconv(x, bags, filters)
@@ -75,9 +75,9 @@ end
 end
 
 @testset "testing convolution with ScatteredBags" begin
-    xs = sprand(3, 7, 0.5)
+    xs = sprand(rng, 3, 7, 0.5)
     x = Matrix(xs)
-    filters = randn(4, 3, 3)
+    filters = randn(rng, 4, 3, 3)
     fs = [filters[:,:,i] for i in 1:3]
     baga = AlignedBags([1:3, 4:7])
     bags = ScatteredBags([[1,2,3],[4,5,6,7]])
@@ -100,7 +100,7 @@ end
 end
 
 @testset "testing convolution layer" begin
-    xs = sprand(3, 15, 0.5)
+    xs = sprand(rng, 3, 15, 0.5)
     x = Matrix(xs)
     for bags in [AlignedBags([1:1, 2:3, 4:6, 7:15]), ScatteredBags(collect.([1:1, 2:3, 4:6, 7:15]))]
         ds = BagNode(ArrayNode(Float32.(x)), bags)
