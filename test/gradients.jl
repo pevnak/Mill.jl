@@ -2,16 +2,16 @@
     f = a -> 2a .+ 1 .+ sin.(a)
     @test gradtest(f, 1.0)
     @test gradtest(f, 2.0)
-    @test gradtest(f, randn(2, 2))
+    @test gradtest(f, randn(rng, 2, 2))
     b = 4
     f = a -> 2a .+ b .+ 1 .+ sin.(a.*b)
     @test gradtest(f, 1.0)
     @test gradtest(f, 2.0)
-    @test gradtest(f, randn(2, 2))
+    @test gradtest(f, randn(rng, 2, 2))
 
     m1 = Dense(2, 2, relu) |> f64
     m2 = Dense(2, 2, relu) |> f64
-    x = randn(2, 10)
+    x = randn(rng, 2, 10)
     @test gradtest(() -> m1(x), Flux.params(m1))
     @test gradtest(() -> m2(x), Flux.params(m2))
 end
@@ -32,9 +32,9 @@ end
     @test gradient(df, 1) ≠ gradient(df, 2)
     @test gradient(df, 2) ≠ gradient(df, 3)
 
-    B = randn(2, 2)
-    A1 = randn(2, 2)
-    A2 = randn(2, 2)
+    B = randn(rng, 2, 2)
+    A1 = randn(rng, 2, 2)
+    A2 = randn(rng, 2, 2)
     f = gradf(A -> 2A .+ B .+ 1 .+ sin.(A.*B), A1)
     @test f(A1) ≠ f(A2)
     @test gradient(f, A1) ≠ gradient(f, A2)
@@ -44,7 +44,7 @@ end
 
     m1 = Dense(2, 2, relu) |> f64
     m2 = Dense(2, 2, relu) |> f64
-    x = randn(2, 10)
+    x = randn(rng, 2, 10)
     f1 = gradf(() -> m1(x), Flux.params(m1))
     f2 = gradf(() -> m2(x), Flux.params(m2))
     @test f1() ≠ f2()

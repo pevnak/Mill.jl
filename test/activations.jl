@@ -1,5 +1,5 @@
 @testset "activations of simple matrix model" begin
-    x = ArrayNode(randn(2, 4))
+    x = ArrayNode(randn(rng, 2, 4))
     m = ArrayModel(Chain(Dense(2,2,leakyrelu), Dense(2,2)))
     hm, o = HiddenLayerModel(m, x, 3)
     os = Flux.activations(m.m, x.data)
@@ -12,7 +12,7 @@
 end
 
 @testset "testing simple aggregation model" begin
-    x = BagNode(ArrayNode(randn(2, 4)), [1:2,3:4])
+    x = BagNode(ArrayNode(randn(rng, 2, 4)), [1:2,3:4])
     m = BagModel(
         ArrayModel(Chain(Dense(2,2,leakyrelu), Dense(2,2))),
         meanmax_aggregation(2),
@@ -32,8 +32,8 @@ end
 end
 
 @testset "testing simple tuple models" begin
-    x = ProductNode((a = ArrayNode(randn(2,2)),
-        b = ArrayNode(randn(3,2))))
+    x = ProductNode((a = ArrayNode(randn(rng,2,2)),
+        b = ArrayNode(randn(rng,3,2))))
     m = ProductModel((
         a = ArrayModel(Chain(Dense(2,2,leakyrelu), Dense(2,2))),
         b = ArrayModel(Chain(Dense(3,3,leakyrelu), Dense(3,3)))))

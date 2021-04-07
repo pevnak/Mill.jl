@@ -2,49 +2,49 @@
 # see e.g. https://stackoverflow.com/questions/40623512/how-to-check-relu-gradient
 const ACTIVATIONS = [identity, σ, swish, softplus, logcosh, mish, tanhshrink, lisht]
 
-@testset "testing simple matrix model" begin
+@time @testset "testing simple matrix model" begin
     layerbuilder(k) = Flux.Dense(k, 2, NNlib.relu)
-    x = ArrayNode(randn(Float32, 4, 5))
+    x = ArrayNode(randn(rng, Float32, 4, 5))
     m = reflectinmodel(x, layerbuilder)
     @test size(m(x).data) == (2, 5)
     @test m isa ArrayModel
     @test eltype(m(x).data) == Float32
 end
 
-@testset "testing simple aggregation model" begin
+@time @testset "testing simple aggregation model" begin
     layerbuilder(k) = Flux.Dense(k, 2, NNlib.relu)
-    x = BagNode(ArrayNode(randn(Float32, 4, 4)), [1:2, 3:4])
+    x = BagNode(ArrayNode(randn(rng, Float32, 4, 4)), [1:2, 3:4])
     m = reflectinmodel(x, layerbuilder)
     @test size(m(x).data) == (2, 2)
     @test m isa BagModel
     @test eltype(m(x).data) == Float32
 end
 
-@testset "testing simple tuple models" begin
-    layerbuilder(k) = Flux.Dense(k, 2, NNlib.relu)
-    x = ProductNode((a=ArrayNode(randn(Float32, 3, 4)), b=ArrayNode(randn(Float32, 4, 4))))
-    m = reflectinmodel(x, layerbuilder)
-    @test eltype(m(x).data) == Float32
-    @test size(m(x).data) == (2, 4)
-    @test m isa ProductModel
-    @test m.ms[:a] isa ArrayModel
-    @test m.ms[:b] isa ArrayModel
+@time @testset "testing simple tuple models" begin
+    @time layerbuilder(k) = Flux.Dense(k, 2, NNlib.relu)
+    @time x = ProductNode((a=ArrayNode(randn(rng, Float32, 3, 4)), b=ArrayNode(randn(rng, Float32, 4, 4))))
+    @time m = reflectinmodel(x, layerbuilder)
+    @time @test eltype(m(x).data) == Float32
+    @time @test size(m(x).data) == (2, 4)
+    @time @test m isa ProductModel
+    @time @test m.ms[:a] isa ArrayModel
+    @time @test m.ms[:b] isa ArrayModel
 
-    x = ProductNode((BagNode(ArrayNode(randn(Float32, 3, 4)), [1:2, 3:4]),
-                     BagNode(ArrayNode(randn(Float32, 4, 4)), [1:1, 2:4])))
-    m = reflectinmodel(x, layerbuilder)
-    @test size(m(x).data) == (2, 2)
-    @test m isa ProductModel
-    @test m.ms[1] isa BagModel
-    @test m.ms[1].im isa ArrayModel
-    @test m.ms[1].bm isa ArrayModel
-    @test m.ms[2] isa BagModel
-    @test m.ms[2].im isa ArrayModel
-    @test m.ms[2].bm isa ArrayModel
+    @time x = ProductNode((BagNode(ArrayNode(randn(rng, Float32, 3, 4)), [1:2, 3:4]),
+                     BagNode(ArrayNode(randn(rng, Float32, 4, 4)), [1:1, 2:4])))
+    @time m = reflectinmodel(x, layerbuilder)
+    @time @test size(m(x).data) == (2, 2)
+    @time @test m isa ProductModel
+    @time @test m.ms[1] isa BagModel
+    @time @test m.ms[1].im isa ArrayModel
+    @time @test m.ms[1].bm isa ArrayModel
+    @time @test m.ms[2] isa BagModel
+    @time @test m.ms[2].im isa ArrayModel
+    @time @test m.ms[2].bm isa ArrayModel
 end
 
-@testset "testing nested bag model" begin
-    bn = BagNode(ArrayNode(randn(Float32, 2, 8)), [1:1, 2:2, 3:6, 7:8])
+@time @testset "testing nested bag model" begin
+    bn = BagNode(ArrayNode(randn(rng, Float32, 2, 8)), [1:1, 2:2, 3:6, 7:8])
     x = BagNode(bn, [1:2, 3:4])
     m = reflectinmodel(x, d -> Flux.Dense(d, 2))
     @test size(m(x).data) == (2, 2)
@@ -55,7 +55,7 @@ end
     @test m.bm isa ArrayModel
     @test eltype(m(x).data) == Float32
 
-    a = BagNode(BagNode(ArrayNode(randn(2,2)),[1:2]),[1:1])
+    a = BagNode(BagNode(ArrayNode(randn(rng, 2,2)),[1:2]),[1:1])
     b = BagNode(missing,[0:-1])
     c = BagNode(a.data[1:0], [0:-1])
     m = reflectinmodel(a, d -> Dense(d,2), d -> meanmax_aggregation(d))
@@ -75,7 +75,7 @@ end
     @test mbca[:,3] ≈ ma
 end
 
-@testset "reflectinmodel for missing" begin
+@time @testset "reflectinmodel for missing" begin
     f1 = x -> reflectinmodel(ArrayNode(x)).m
     f2 = x -> reflectinmodel(ArrayNode(x),
                              d->Flux.Chain(Dense(d, 10), Dense(10, 10))).m
@@ -110,8 +110,8 @@ end
     @test f2(x2)[1] isa PostImputingDense
     @test f2(x3)[1] isa PostImputingDense
 
-    x1 = rand([1, 2], 3, 3)
-    x2 = rand([1, 2, missing], 3, 3)
+    x1 = rand(rng, [1, 2], 3, 3)
+    x2 = rand(rng, [1, 2, missing], 3, 3)
     x3 = fill(missing, 3, 3)
 
     @test f1(x1) isa Flux.Dense
@@ -123,39 +123,39 @@ end
 end
 
 # pn.m should be identity for any product node pn with a single key
-@testset "single key dictionary reflect in model" begin
-    layerbuilder(k) = Flux.Dense(k, 2, NNlib.relu)
-    fsm = Dict("" => layerbuilder)
+@time @testset "single key dictionary reflect in model" begin
+    @time layerbuilder(k) = Flux.Dense(k, 2, NNlib.relu)
+    @time fsm = Dict("" => layerbuilder)
 
-    x1 = (ArrayNode(randn(Float32, 3, 4)),) |> ProductNode
-    x2 = (a = ArrayNode(randn(Float32, 3, 4)),) |> ProductNode
-    x3 = (a = ArrayNode(randn(Float32, 3, 4)), b = ArrayNode(randn(Float32, 3, 4))) |> ProductNode
+    @time x1 = (ArrayNode(randn(rng, Float32, 3, 4)),) |> ProductNode
+    @time x2 = (a = ArrayNode(randn(rng, Float32, 3, 4)),) |> ProductNode
+    @time x3 = (a = ArrayNode(randn(rng, Float32, 3, 4)), b = ArrayNode(randn(rng, Float32, 3, 4))) |> ProductNode
 
-    m1 = reflectinmodel(x1, layerbuilder; single_key_identity=false)
-    m1_ski = reflectinmodel(x1, layerbuilder; single_key_identity=true)
-    m1_ski_fsm = reflectinmodel(x1, layerbuilder; fsm=fsm, single_key_identity=true)
-    m2 = reflectinmodel(x2, layerbuilder; single_key_identity=false)
-    m2_ski = reflectinmodel(x2, layerbuilder; single_key_identity=true)
-    m2_ski_fsm = reflectinmodel(x2, layerbuilder; fsm=fsm, single_key_identity=true)
-    m3 = reflectinmodel(x3, layerbuilder; single_key_identity=false)
-    m3_ski = reflectinmodel(x3, layerbuilder; single_key_identity=true)
-    m3_ski_fsm = reflectinmodel(x3, layerbuilder; fsm=fsm, single_key_identity=true)
+    @time m1 = reflectinmodel(x1, layerbuilder; single_key_identity=false)
+    @time m1_ski = reflectinmodel(x1, layerbuilder; single_key_identity=true)
+    @time m1_ski_fsm = reflectinmodel(x1, layerbuilder; fsm=fsm, single_key_identity=true)
+    @time m2 = reflectinmodel(x2, layerbuilder; single_key_identity=false)
+    @time m2_ski = reflectinmodel(x2, layerbuilder; single_key_identity=true)
+    @time m2_ski_fsm = reflectinmodel(x2, layerbuilder; fsm=fsm, single_key_identity=true)
+    @time m3 = reflectinmodel(x3, layerbuilder; single_key_identity=false)
+    @time m3_ski = reflectinmodel(x3, layerbuilder; single_key_identity=true)
+    @time m3_ski_fsm = reflectinmodel(x3, layerbuilder; fsm=fsm, single_key_identity=true)
 
-    for m in [m1, m1_ski, m1_ski_fsm]
+    @time for m in [m1, m1_ski, m1_ski_fsm]
         @test eltype(m(x1).data) == Float32
         @test size(m(x1).data) == (2, 4)
         @test m isa ProductModel
         @test m.ms[1] isa ArrayModel
     end
 
-    for m in [m2, m2_ski, m2_ski_fsm]
+    @time for m in [m2, m2_ski, m2_ski_fsm]
         @test eltype(m(x2).data) == Float32
         @test size(m(x2).data) == (2, 4)
         @test m isa ProductModel
         @test m.ms[1] isa ArrayModel
     end
 
-    for m in [m3, m3_ski, m3_ski_fsm]
+    @time for m in [m3, m3_ski, m3_ski_fsm]
         @test eltype(m(x3).data) == Float32
         @test size(m(x3).data) == (2, 4)
         @test m isa ProductModel
@@ -176,7 +176,7 @@ end
 end
 
 # array model for matrices with one row should implement identity
-@testset "single scalar as identity" begin
+@time @testset "single scalar as identity" begin
     layerbuilder(k) = Flux.Dense(k, 2, NNlib.relu)
     x1 = ArrayNode(randn(Float32, 1, 3))
     x2 = BagNode(ArrayNode(randn(Float32, 1, 5)), [1:2, 3:5])
@@ -222,8 +222,8 @@ end
 # it may break AD
 # @testset "testing equals and hash" begin
 #     @eval layerbuilder(k) = Flux.Dense(k, 2, NNlib.relu)
-#     @eval x1 = ArrayNode(randn(Float32, 3, 4)) 
-#     @eval x2 = ArrayNode(randn(Float32, 4, 4)) 
+#     @eval x1 = ArrayNode(randn(Float32, 3, 4))
+#     @eval x2 = ArrayNode(randn(Float32, 4, 4))
 #     @eval x3 = BagNode(x1, [1:2, 3:4])
 #     @eval x4 = BagNode(x2, [1:1, 2:4])
 #     @eval x5 = ProductNode((x3, x4))
@@ -249,53 +249,60 @@ end
 #     end
 # end
 
-@testset "model aggregation grad check w.r.t. inputs" begin
+@time @testset "model aggregation grad check w.r.t. inputs" begin
     for (bags1, bags2, bags3) in BAGS3
-        layerbuilder(k) = Dense(k, 2, rand(ACTIVATIONS)) |> f64
-        abuilder(d) = all_aggregations(Float64, d)
-        x = randn(4, 4)
-        y = randn(3, 4)
-        z = randn(2, 8)
+        activ_f = rand(ACTIVATIONS)
+        @info "using" activ_f
+        @time layerbuilder(k) = Dense(k, 2, activ_f) |> f64
+        @time abuilder(d) = all_aggregations(Float64, d)
+        x = randn(rng, 4, 4)
+        y = randn(rng, 3, 4)
+        z = randn(rng, 2, 8)
 
         ds = x -> ArrayNode(x)
-        m = reflectinmodel(ds(x), layerbuilder, abuilder)
-        @test gradtest(x -> m(ds(x)).data, x)
+        @time m = reflectinmodel(ds(x), layerbuilder, abuilder)
+        @info "between reflectinmodel and gradtest of" m
+        @time @test gradtest(x -> m(ds(x)).data, x)
 
         ds = x -> BagNode(ArrayNode(x), bags1)
-        m = reflectinmodel(ds(x), layerbuilder, abuilder)
-        @test gradtest(x -> m(ds(x)).data, x)
+        @time m = reflectinmodel(ds(x), layerbuilder, abuilder)
+        @info "between reflectinmodel and gradtest of" m
+        @time @test gradtest(x -> m(ds(x)).data, x)
 
         ds = (x, y) -> ProductNode((ArrayNode(x), ArrayNode(y)))
-        m = reflectinmodel(ds(x, y), layerbuilder, abuilder)
-        @test gradtest((x, y) -> m(ds(x, y)).data, x, y)
+        @time m = reflectinmodel(ds(x, y), layerbuilder, abuilder)
+        @info "between reflectinmodel and gradtest of" m
+        @time @test gradtest((x, y) -> m(ds(x, y)).data, x, y)
 
-        ds = (x, y) -> ProductNode((BagNode(ArrayNode(x), bags1), BagNode(ArrayNode(y), bags2))) 
-        m = reflectinmodel(ds(x, y), layerbuilder, abuilder)
-        @test gradtest((x, y) -> m(ds(x, y)).data, x, y)
+        ds = (x, y) -> ProductNode((BagNode(ArrayNode(x), bags1), BagNode(ArrayNode(y), bags2)))
+        @time m = reflectinmodel(ds(x, y), layerbuilder, abuilder)
+        @info "between reflectinmodel and gradtest of" m
+        @time @test gradtest((x, y) -> m(ds(x, y)).data, x, y)
 
         ds = z -> BagNode(BagNode(ArrayNode(z), bags3), bags1)
-        m = reflectinmodel(ds(z), layerbuilder, abuilder)
-        @test gradtest(z -> m(ds(z)).data, z)
+        @time m = reflectinmodel(ds(z), layerbuilder, abuilder)
+        @info "between reflectinmodel and gradtest of" m
+        @time @test gradtest(z -> m(ds(z)).data, z)
     end
 end
 
-@testset "model aggregation grad check w.r.t. inputs weighted" begin
+@time @testset "model aggregation grad check w.r.t. inputs weighted" begin
     for (bags1, bags2, bags3) in BAGS3
         layerbuilder(k) = Dense(k, 2, rand(ACTIVATIONS)) |> f64
         abuilder(d) = all_aggregations(Float64, d)
-        x = randn(4, 4)
-        y = randn(3, 4)
-        z = randn(2, 8)
-        w1 = abs.(randn(4)) .+ 0.1
-        w2 = abs.(randn(4)) .+ 0.1
-        w3 = abs.(randn(8)) .+ 0.1
+        x = randn(rng, 4, 4)
+        y = randn(rng, 3, 4)
+        z = randn(rng, 2, 8)
+        w1 = abs.(randn(rng, 4)) .+ 0.1
+        w2 = abs.(randn(rng, 4)) .+ 0.1
+        w3 = abs.(randn(rng, 8)) .+ 0.1
 
         ds = x -> WeightedBagNode(ArrayNode(x), bags1, w1)
         m = reflectinmodel(ds(x), layerbuilder, abuilder)
         @test gradtest(x -> m(ds(x)).data, x)
 
         ds = (x, y) -> ProductNode((WeightedBagNode(ArrayNode(x), bags1, w1),
-                                    WeightedBagNode(ArrayNode(y), bags2, w2))) 
+                                    WeightedBagNode(ArrayNode(y), bags2, w2)))
         m = reflectinmodel(ds(x, y), layerbuilder, abuilder)
         @test gradtest((x, y) -> m(ds(x, y)).data, x, y)
 
@@ -305,13 +312,13 @@ end
     end
 end
 
-@testset "model aggregation grad check w.r.t. params" begin
+@time @testset "model aggregation grad check w.r.t. params" begin
     for (bags1, bags2, bags3) in BAGS3
         layerbuilder(k) = Dense(k, 2, rand(ACTIVATIONS)) |> f64
         abuilder(d) = all_aggregations(Float64, d)
-        x = randn(4, 4)
-        y = randn(3, 4)
-        z = randn(2, 8)
+        x = randn(rng, 4, 4)
+        y = randn(rng, 3, 4)
+        z = randn(rng, 2, 8)
 
         for ds in [
                    ArrayNode(x),
@@ -326,16 +333,16 @@ end
     end
 end
 
-@testset "model aggregation grad check w.r.t. params weighted" begin
+@time @testset "model aggregation grad check w.r.t. params weighted" begin
     for (bags1, bags2, bags3) in BAGS3
         layerbuilder(k) = Dense(k, 2) |> f64
         abuilder(d) = all_aggregations(Float64, d)
-        x = randn(4, 4)
-        y = randn(3, 4)
-        z = randn(2, 8)
-        w1 = abs.(randn(4)) .+ 0.1
-        w2 = abs.(randn(4)) .+ 0.1
-        w3 = abs.(randn(8)) .+ 0.1
+        x = randn(rng, 4, 4)
+        y = randn(rng, 3, 4)
+        z = randn(rng, 2, 8)
+        w1 = abs.(randn(rng, 4)) .+ 0.1
+        w2 = abs.(randn(rng, 4)) .+ 0.1
+        w3 = abs.(randn(rng, 8)) .+ 0.1
 
         for ds in [
                    WeightedBagNode(ArrayNode(x), bags1, w1),
@@ -349,10 +356,10 @@ end
     end
 end
 
-@testset "A gradient of ProductNode with a NamedTuple " begin
+@time @testset "A gradient of ProductNode with a NamedTuple " begin
     ds = ProductNode((
-                     a = ArrayNode(randn(2, 4)),
-                     b = ArrayNode(randn(3, 4))
+                     a = ArrayNode(randn(rng, 2, 4)),
+                     b = ArrayNode(randn(rng, 3, 4))
                     ))
     m = ProductModel((
                       a = ArrayModel(Dense(2, 2, rand(ACTIVATIONS))),

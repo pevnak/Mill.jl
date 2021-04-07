@@ -84,7 +84,7 @@ end
 end
 
 @testset "matrix weights" begin
-    W = abs.(rand(Float32, 6))
+    W = abs.(rand(rng, Float32, 6))
     W_mat = vcat(W, 2*W)
     X = reshape(1:12, 2, 6) |> f32
     for bags in BAGS
@@ -95,9 +95,9 @@ end
 end
 
 @testset "pnorm functionality" begin
-    dummy = randn(2)
+    dummy = randn(rng, 2)
     for t = 1:10
-        a, b, c, d, ρ1, ρ2, c1, c2, w1, w2 = randn(10)
+        a, b, c, d, ρ1, ρ2, c1, c2, w1, w2 = randn(rng, 10)
         p1, p2 = p_map(ρ1), p_map(ρ2)
         w1 = abs(w1)
         w2 = abs(w2)
@@ -116,7 +116,7 @@ end
                                                (1/(w1+w2)*(w1*abs(c-c2)^p2 + w2*abs(d-c2)^p2))^(1/p2)
                                               ]
         for bags in BAGS
-            X = randn(2, 6)
+            X = randn(rng, 2, 6)
             agg = SegmentedPNorm(dummy, inv_p_map([1+1e-16, 1+1e-16]), [0.0, 0.0])
             @test agg(X, bags) ≈ SegmentedMean(dummy)(abs.(X), bags)
             agg = SegmentedPNorm(dummy, inv_p_map([2.0, 2.0]), [0.0, 0.0])
@@ -126,18 +126,18 @@ end
 end
 
 @testset "lse functionality" begin
-    dummy = randn(2)
+    dummy = randn(rng, 2)
     for t = 1:10
-        a, b, c, d, ρ1, ρ2 = randn(6)
+        a, b, c, d, ρ1, ρ2 = randn(rng, 6)
         r1, r2 = r_map(ρ1), r_map(ρ2)
         @test SegmentedLSE(dummy, [ρ1, ρ2])([a b; c d], ScatteredBags([[1,2]])) ≈ [
                                                                                1/r1*log(1/2*(exp(a*r1)+exp(b*r1)));
                                                                                1/r2*log(1/2*(exp(c*r2)+exp(d*r2)))
                                                                               ]
         for bags in BAGS
-            X = randn(2, 6)
-            W = abs.(randn(6))
-            r1, r2 = randn(2)
+            X = randn(rng, 2, 6)
+            W = abs.(randn(rng, 6))
+            r1, r2 = randn(rng, 2)
             # doesn't use weights
             @test SegmentedLSE(dummy, [ρ1, ρ2])(X, bags) == SegmentedLSE(dummy, [ρ1, ρ2])(X, bags, W)
             # the bigger value of r, the closer we are to the real maximum
@@ -148,13 +148,13 @@ end
 
 @testset "pnorm numerical stability" begin
     k, d = 10, 5
-    dummy, c = randn(d), zeros(d)
+    dummy, c = randn(rng, d), zeros(d)
     b = AlignedBags([1:k])
     ρ1 = inv_p_map(ones(d))
-    ρ2 = randn(d)
+    ρ2 = randn(rng, d)
     p2 = p_map(ρ2)
-    Z = 1e5 .+ 1e3 .* randn(d, k)
-    W = abs.(randn(k)) .+ 1e-2
+    Z = 1e5 .+ 1e3 .* randn(rng, d, k)
+    W = abs.(randn(rng, k)) .+ 1e-2
     for X in [Z, -Z, randn(d, k)]
         @test SegmentedPNorm(dummy, ρ1, c)(X, b) ≈ sum(abs.(X); dims=2) ./ k
         @test SegmentedPNorm(dummy, ρ1, c)(X, b, W) ≈ sum(W' .* abs.(X); dims=2) / sum(W)
@@ -174,10 +174,10 @@ end
     k, d = 10, 5
     dummy = randn(d)
     b = AlignedBags([1:k])
-    ρ1 = inv_r_map(1e15 .+ 1e5 .* randn(d))
-    ρ2 = inv_r_map(abs.(1e5 .* randn(d)))
-    Z = 1e5 .+ 1e3 .* randn(d, k)
-    W = abs.(randn(k)) .+ 1e-2
+    ρ1 = inv_r_map(1e15 .+ 1e5 .* randn(rng, d))
+    ρ2 = inv_r_map(abs.(1e5 .* randn(rng, d)))
+    Z = 1e5 .+ 1e3 .* randn(rng, d, k)
+    W = abs.(randn(rng, k)) .+ 1e-2
     for X in [Z, -Z, randn(d, k)]
         @test SegmentedLSE(dummy, ρ1)(X, b) ≈ maximum(X; dims=2)
         # doesn't use weights
@@ -213,7 +213,7 @@ end
 
     a = all_aggregations(Float32, 10)
     for b in BAGS2
-        X = rand(Float32, 10, 100)
+        X = rand(rng, Float32, 10, 100)
         w = abs.(randn(Float32, size(X, 2))) .+ 0.1
         w_mat = abs.(randn(Float32, size(X))) .+ 0.1
         @inferred a(X, b)
@@ -238,8 +238,8 @@ end
     a32 = all_aggregations(Float32, 10)
     a64 = all_aggregations(Float64, 10)
     for b in BAGS2
-        X32 = rand(Float32, 10, 100)
-        X64 = rand(10, 100)
+        X32 = rand(rng, Float32, 10, 100)
+        X64 = rand(rng, 10, 100)
         w32 = abs.(randn(Float32, size(X32, 2))) .+ 0.1f0
         w64 = abs.(randn(Float64, size(X64, 2))) .+ 0.1
         w_mat32 = abs.(randn(Float32, size(X32))) .+ 0.1f0
@@ -260,21 +260,21 @@ end
 end
 
 @testset "missing values" begin
-    dummy = randn(2)
-    ψ = randn(2)
+    dummy = randn(rng, 2)
+    ψ = randn(rng, 2)
     for bags in [AlignedBags([0:-1]), AlignedBags([0:-1, 0:-1, 0:-1])]
         @test SegmentedMean(ψ)(missing, bags) == repeat(ψ, 1, length(bags))
         @test SegmentedSum(ψ)(missing, bags) == repeat(ψ, 1, length(bags))
         @test SegmentedMax(ψ)(missing, bags) == repeat(ψ, 1, length(bags))
         @test SegmentedLSE(ψ, dummy)(missing, bags) == repeat(ψ, 1, length(bags))
-        @test SegmentedPNorm(ψ, dummy, dummy)(missing, bags) == repeat(ψ, 1, length(bags)) 
+        @test SegmentedPNorm(ψ, dummy, dummy)(missing, bags) == repeat(ψ, 1, length(bags))
     end
 
     # default values ψ are indeed filled in
     for bags in vcat(BAGS2)
         idcs = isempty.(bags.bags)
         l = maximum(maximum.(bags.bags[.!idcs]))
-        X = randn(2, l)
+        X = randn(rng, 2, l)
         @test SegmentedMean(ψ)(X, bags)[:, idcs] == repeat(ψ, 1, sum(idcs))
         @test SegmentedSum(ψ)(X, bags)[:, idcs] == repeat(ψ, 1, sum(idcs))
         @test SegmentedMax(ψ)(X, bags)[:, idcs] == repeat(ψ, 1, sum(idcs))
@@ -308,7 +308,7 @@ end
 
 @testset "aggregation grad check w.r.t. input" begin
     for bags in BAGS2
-        d = rand(1:20)
+        d = rand(rng, 1:20)
         x = randn(d, 10)
         w = abs.(randn(size(x, 2))) .+ 0.1
         w_mat = abs.(randn(size(x))) .+ 0.1
@@ -321,7 +321,7 @@ end
 
 @testset "aggregation gradcheck w.r.t weights" begin
     for bags in BAGS2
-        d = rand(1:20)
+        d = rand(rng, 1:20)
         x = randn(d, 10)
         w = abs.(randn(size(x, 2))) .+ 0.1
         w_mat = abs.(randn(size(x))) .+ 0.1
@@ -362,7 +362,7 @@ end
     @test gradtest(() -> a2(x, AlignedBags([0:-1, 0:-1]), nothing), Flux.params(a2))
 
     for bags in BAGS2
-        d = rand(1:20)
+        d = rand(rng, 1:20)
         x = randn(d, 10)
         a1 = nonparam_aggregations(Float64, d)
         a2 = param_aggregations(Float64, d)

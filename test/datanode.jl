@@ -1,15 +1,15 @@
 md2 = fill("metadata", 2)
 md3 = fill("metadata", 3)
 md4 = fill("metadata", 4)
-a = BagNode(ArrayNode(rand(3, 4)), [1:4], md4)
-b = BagNode(ArrayNode(rand(3, 4)), [1:2, 3:4], md4)
-c = BagNode(ArrayNode(rand(3, 4)), [1:1, 2:2, 3:4], md4)
-d = BagNode(ArrayNode(rand(3, 4)), [1:4, 0:-1], md4)
-wa = WeightedBagNode(ArrayNode(rand(3, 4)), [1:4], rand(1:4, 4), md4)
-wb = WeightedBagNode(ArrayNode(rand(3, 4)), [1:2, 3:4], rand(1:4, 4), md4)
-wc = WeightedBagNode(ArrayNode(rand(3, 4)), [1:1, 2:2, 3:4], rand(1:4, 4), md4)
-wd = WeightedBagNode(ArrayNode(rand(3, 4)), [1:4, 0:-1], rand(1:4, 4), md4)
-e = ArrayNode(rand(2, 2), md2)
+a = BagNode(ArrayNode(rand(rng, 3, 4)), [1:4], md4)
+b = BagNode(ArrayNode(rand(rng, 3, 4)), [1:2, 3:4], md4)
+c = BagNode(ArrayNode(rand(rng, 3, 4)), [1:1, 2:2, 3:4], md4)
+d = BagNode(ArrayNode(rand(rng, 3, 4)), [1:4, 0:-1], md4)
+wa = WeightedBagNode(ArrayNode(rand(rng, 3, 4)), [1:4], rand(rng, 1:4, 4), md4)
+wb = WeightedBagNode(ArrayNode(rand(rng, 3, 4)), [1:2, 3:4], rand(rng, 1:4, 4), md4)
+wc = WeightedBagNode(ArrayNode(rand(rng, 3, 4)), [1:1, 2:2, 3:4], rand(rng, 1:4, 4), md4)
+wd = WeightedBagNode(ArrayNode(rand(rng, 3, 4)), [1:4, 0:-1], rand(rng, 1:4, 4), md4)
+e = ArrayNode(rand(rng, 2, 2), md2)
 
 f = ProductNode((wb,b), md2)
 g = ProductNode([c, wc], md3)
@@ -20,7 +20,7 @@ i = ProductNode((
                         b,
                         BagNode(
                                 BagNode(
-                                        ArrayNode(rand(2, 4)),
+                                        ArrayNode(rand(rng, 2, 4)),
                                         [1:1, 2:2, 3:3, 4:4]
                                        ),
                                 [1:3, 4:4]
@@ -48,7 +48,7 @@ end
     @test catobs(e, e).data == hcat(e.data, e.data) == reduce(catobs, [e,e]).data
     @test hcat(e, e).data == hcat(e.data, e.data)
     @test vcat(e, e).data == vcat(e.data, e.data)
-    x = ArrayNode(randn(2,3), rand(2, 3))
+    x = ArrayNode(randn(rng, 2,3), rand(rng, 2, 3))
     @test catobs(x, x[0:-1]) isa ArrayNode{Matrix{Float64}, Matrix{Float64}}
     @inferred catobs(x, x[0:-1])
     @test reduce(catobs, [x, x[0:-1]]) isa ArrayNode{Matrix{Float64}, Matrix{Float64}}
@@ -203,7 +203,7 @@ end
 end
 
 @testset "testing nested ragged array" begin
-    x = BagNode(ArrayNode(rand(3,10)),[1:2,3:3,0:-1,4:5,6:6,7:10])
+    x = BagNode(ArrayNode(rand(rng, 3,10)),[1:2,3:3,0:-1,4:5,6:6,7:10])
     y = BagNode(x,[1:2,3:3,4:5,6:6])
     @test y[1].data.data.data == x.data.data[:,1:3]
     @test y[1].data.bags.bags == [1:2,3:3]
@@ -215,8 +215,8 @@ end
 
 
 @testset "testing ProductNode" begin
-    x = ProductNode((ArrayNode(rand(3,2)),ArrayNode(rand(3,2)),ArrayNode(randn(3,2))))
-    y = ProductNode((ArrayNode(rand(3,2)),ArrayNode(rand(3,2)),ArrayNode(randn(3,2))))
+    x = ProductNode((ArrayNode(rand(rng, 3,2)),ArrayNode(rand(rng, 3,2)),ArrayNode(randn(rng, 3,2))))
+    y = ProductNode((ArrayNode(rand(rng, 3,2)),ArrayNode(rand(rng, 3,2)),ArrayNode(randn(rng, 3,2))))
     @test catobs(x,y).data[1].data == hcat(x.data[1].data,y.data[1].data)
     @test reduce(catobs, [x,y]).data[1].data == hcat(x.data[1].data,y.data[1].data)
     @test catobs(x,y).data[2].data == hcat(x.data[2].data,y.data[2].data)
@@ -232,12 +232,12 @@ end
 
 @testset "testing sparsify" begin
     @test sparsify(zeros(10, 10), 0.05) isa SparseMatrixCSC
-    @test sparsify(randn(10, 10), 0.05) isa Matrix
-    @test sparsify(randn(10), 0.05) isa Vector
+    @test sparsify(randn(rng, 10, 10), 0.05) isa Matrix
+    @test sparsify(randn(rng, 10), 0.05) isa Vector
 end
 
 @testset "testing sparsify and mapdata" begin
-    x = ProductNode((ProductNode((ArrayNode(randn(5,5)), ArrayNode(zeros(5,5)))), ArrayNode(zeros(5,5))))
+    x = ProductNode((ProductNode((ArrayNode(randn(rng, 5,5)), ArrayNode(zeros(5,5)))), ArrayNode(zeros(5,5))))
     xs = mapdata(i -> sparsify(i, 0.05), x)
     @test xs.data[2].data isa SparseMatrixCSC
     @test xs.data[1].data[2].data isa SparseMatrixCSC
@@ -245,7 +245,7 @@ end
 end
 
 @testset "testing missing mapdata" begin
-    x = ProductNode((ProductNode((ArrayNode(randn(5,5)), ArrayNode(zeros(5,5)))), ArrayNode(zeros(5,5))), BagNode(missing, AlignedBags([0:-1]), nothing))
+    x = ProductNode((ProductNode((ArrayNode(randn(rng, 5,5)), ArrayNode(zeros(5,5)))), ArrayNode(zeros(5,5))), BagNode(missing, AlignedBags([0:-1]), nothing))
     xs = mapdata(i -> sparsify(i, 0.05), x)
     @test xs.data[2].data isa SparseMatrixCSC
     @test xs.data[1].data[2].data isa SparseMatrixCSC
@@ -258,7 +258,7 @@ end
     k2 = ProductNode((a = wb, b = b), md2)
     metadata1 = fill("metadata", 4)
     metadata2 = "Oh, Hi Mark"
-    r = rand(3,4)
+    r = rand(rng, 3,4)
     x1 = BagNode(ArrayNode(r),[1:4], metadata1)
     x2 = BagNode(ArrayNode(r),[1:4], metadata1)
     x3 = BagNode(ArrayNode(r),[1:4], metadata2)
@@ -312,8 +312,8 @@ end
     @test isequal(f, f)
     @test !isequal(f, g)
 
-    wf = WeightedBagNode(a, [1:4], rand(1:4, 4))
-    wg = WeightedBagNode(b, [1:4], rand(1:4, 4))
+    wf = WeightedBagNode(a, [1:4], rand(rng, 1:4, 4))
+    wg = WeightedBagNode(b, [1:4], rand(rng, 1:4, 4))
     @test wf != wf
     @test wf != wg
     @test isequal(wf, wf)
